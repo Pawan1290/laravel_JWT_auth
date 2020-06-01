@@ -20,7 +20,7 @@ class AuthController extends Controller
     {
         $credentials = request(['email', 'password']);
 
-        if (! $token = auth()->attempt($credentials)) {
+        if (! $token = $this->guard()->attempt($credentials)) {
             return response()->json(['error' => 'Invalid username or password'], 401);
         }
 
@@ -31,7 +31,7 @@ class AuthController extends Controller
         $this->validate($request, [
             'name' => 'required',
             'email' => 'required|email|unique:users,email',
-            'password' => 'required|same:confirm-password',
+            'password' => 'required|same:password_confirm',
         ]);
 
         $input = $request->all();
@@ -42,19 +42,19 @@ class AuthController extends Controller
 
     public function me()
     {
-        return response()->json(auth()->user());
+        return response()->json($this->guard()->user());
     }
 
     public function logout()
     {
-        auth()->logout();
+        $this->guard()->logout();
 
         return response()->json(['message' => 'Successfully logged out']);
     }
 
     public function refresh()
     {
-        return $this->respondWithToken(auth()->refresh());
+        return $this->respondWithToken($this->guard()->refresh());
     }
 
     private function respondWithToken($token)
@@ -62,7 +62,12 @@ class AuthController extends Controller
         return response()->json([
             'access_token' => $token,
             'token_type' => 'bearer',
-            'expires_in' => auth()->factory()->getTTL() * 60
+            'expires_in' => $this->guard()->factory()->getTTL() * 60
         ]);
+    }
+
+    public function guard()
+    {
+        return Auth::guard();
     }
 }
